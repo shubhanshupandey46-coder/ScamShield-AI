@@ -10,7 +10,13 @@ You are ScamShield AI.
 
 Analyze the following message.
 
-Return ONLY valid JSON in this format:
+Return ONLY valid JSON.
+
+Do NOT include markdown.
+Do NOT include \`\`\`json.
+Do NOT explain anything.
+
+Use exactly this format:
 
 {
   "riskScore": 0,
@@ -24,11 +30,16 @@ ${message}
 `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-3-flash-preview",
     contents: prompt,
   });
 
-  return response.text;
+  let text = response.text.trim();
+
+  // Remove markdown if Gemini accidentally returns it
+  text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+
+  return JSON.parse(text);
 }
 
 module.exports = { analyzeScam };
