@@ -1,5 +1,12 @@
-import { useState } from "react";
+  import { useState } from "react";
+
 import "./App.css";
+
+import Hero from "./components/Hero";
+import InputCard from "./components/InputCard";
+import Loading from "./components/Loading";
+import ResultCard from "./components/ResultCard";
+import CyberBackground from "./components/CyberBackground";
 
 function App() {
   const [message, setMessage] = useState("");
@@ -13,146 +20,85 @@ function App() {
     }
 
     setLoading(true);
+    setResult(null);
 
     try {
-      const response = await fetch("https://scamshield-ai-aqg0.onrender.com/analyze",  {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ message }),
-      });
+      const response = await fetch(
+        "https://scamshield-ai-aqg0.onrender.com/analyze",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message,
+          }),
+        }
+      );
 
       const data = await response.json();
 
-      setResult(data);
-    } catch (err) {
+      setResult({
+        riskScore: data.riskScore ?? 0,
+        verdict: data.verdict ?? "Unknown",
+        reasons: data.reasons ?? [],
+        advice: data.advice ?? [],
+      });
+    } catch (error) {
+      console.error(error);
+
       setResult({
         riskScore: 0,
         verdict: "Error",
-        reasons: ["Unable to connect to backend."],
-        advice: ["Please check if the backend server is running."],
+        reasons: [
+          "Unable to connect to the AI server."
+        ],
+        advice: [
+          "Please try again after a few seconds."
+        ],
       });
     }
 
     setLoading(false);
   }
 
-  const getColor = (score) => {
+  function getColor(score) {
     if (score >= 70) return "#ef4444";
     if (score >= 40) return "#f59e0b";
     return "#22c55e";
-  };
+  }
 
   return (
-    <div className="app">
-      <div className="background"></div>
+    <>
+      {/* Animated Cyber Background */}
+      <CyberBackground />
 
       <div className="container">
 
-        <div className="glass">
+        {/* Hero */}
+        <Hero />
 
-          <h1>🛡 ScamShield AI</h1>
+        {/* Input */}
+        <InputCard
+          message={message}
+          setMessage={setMessage}
+          analyzeMessage={analyzeMessage}
+          loading={loading}
+        />
 
-          <p className="subtitle">
-            AI-Powered Scam Detection using Google Gemini
-          </p>
+        {/* Loading Animation */}
+        {loading && <Loading />}
 
-          <textarea
-            rows="8"
-            placeholder="Paste any suspicious SMS, Email or WhatsApp message here..."
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
+        {/* Results */}
+        {!loading && result && (
+          <ResultCard
+            result={result}
+            getColor={getColor}
           />
-
-          <button onClick={analyzeMessage}>
-            {loading ? "🧠 Analyzing..." : "🛡 Analyze with Gemini AI"}
-          </button>
-
-          {loading && (
-            <div className="loading">
-              <div className="loader"></div>
-              <p>Checking for phishing patterns...</p>
-            </div>
-          )}
-
-          {result && !loading && (
-            <div className="result">
-
-              <h2>📊 Scam Analysis</h2>
-
-              <div className="scoreCard">
-
-                <div className="scoreTop">
-                  <span>Risk Score</span>
-
-                  <span
-                    style={{
-                      color: getColor(result.riskScore),
-                      fontWeight: "bold",
-                    }}
-                  >
-                    {result.riskScore}/100
-                  </span>
-                </div>
-
-                <div className="progress">
-                  <div
-                    className="progressFill"
-                    style={{
-                      width: `${result.riskScore}%`,
-                      background: getColor(result.riskScore),
-                    }}
-                  ></div>
-                </div>
-
-              </div>
-
-              <div className="verdict">
-                <h3>Verdict</h3>
-
-                <span
-                  style={{
-                    color: getColor(result.riskScore),
-                    fontWeight: "bold",
-                    fontSize: "22px",
-                  }}
-                >
-                  {result.verdict}
-                </span>
-              </div>
-
-              <div className="section">
-
-                <h3>🚨 Reasons</h3>
-
-                <ul>
-                  {result.reasons.map((item, index) => (
-                    <li key={index}>{item}</li>
-                  ))}
-                </ul>
-
-              </div>
-
-              <div className="section">
-
-                <h3>🛡 Safety Advice</h3>
-
-                <ul>
-                  {result.advice.map((item, index) => (
-                    <li key={index}>{item}</li>
-                  ))}
-                </ul>
-
-              </div>
-
-            </div>
-          )}
-
-        </div>
+        )}
 
       </div>
-    </div>
+    </>
   );
 }
 
